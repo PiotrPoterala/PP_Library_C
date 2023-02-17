@@ -3,11 +3,22 @@
 
 	#include <stdbool.h>
 	#include "delay.h"
-	#include "input_signals.h"
+	#include "def_pins_stm32f4.h"
+
+		#define LCD_PINS_SIZE 13 
+		#define LCD_DATA_PINS_SIZE 8 
+
+		typedef enum {DB0=0, DB1, DB2, DB3, DB4, DB5, DB6, DB7, CD, RD, WR, CE, RES}LCDpinsIndexes;
 
 		typedef enum {BASE_FONT, FONT_1}FontType;
 
 		typedef struct{
+			
+			uPin *outputsPins;
+			uPortMask *outputsPortMask;
+			int outputsPortMaskSize;
+			
+			
 			volatile unsigned int posX;
 			volatile unsigned int posY;
 			volatile unsigned int posGraphX;
@@ -18,7 +29,7 @@
 			volatile _Bool bold;
 			volatile _Bool blink;
 			volatile _Bool reverse;
-			volatile _Bool dependenceAtribiutesOnArea;
+			volatile _Bool independentWriteTextAtribiutes;
 			
 			volatile _Bool cursorEnable;
 			
@@ -30,6 +41,9 @@
 			unsigned int width;			
 		}SFont;
 
+		
+	void LCDsetIO(LCDdata *data, uPin *outputsPins, uPortMask *outputsPortMask, int outputsPortMaskSize);
+		
 	//for font 8x8 and number of dots 240x128
 	#define LCD_ROWS 16 
 	#define LCD_ROWS_GRAPH 128 
@@ -41,6 +55,8 @@
 	#define LCD_MAX_ROWS_GRAPH (LCD_PAGES_GRAPH*LCD_ROWS_GRAPH)
 
 	void LCDsetTextAtribiuteModeEnable(LCDdata* data, _Bool enable);
+	void LCDsetReverse(LCDdata* data, _Bool reverse);
+	void LCDsetBlink(LCDdata* data, _Bool blink);
 	void LCDsetCursorEnable(LCDdata* data, _Bool enable);
 	void LCDseekCursor(LCDdata *data, unsigned int cursorX, unsigned int cursorY);
 		
@@ -58,7 +74,8 @@
 	void LCDgotoFontGraph(LCDdata *data, unsigned int lcd_X, unsigned int lcd_Y);
 	void LCDclearFontGraph(LCDdata *data, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height);
 
-	void LCDsetTextAtribiuteOnTheArea(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
+	void LCDwriteTextAtribiutesOnTheArea(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
+	void LCDsetIndependentWriteTextAtribiutes(LCDdata* data, _Bool indWrite);
 	void LCDclearTextAtribiuteOnTheArea(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
 
 	void LCDgotoGraph(LCDdata *data, unsigned int lcd_X, unsigned int lcd_Y);
@@ -68,38 +85,31 @@
 
 	void LCDputcharGraph(LCDdata *data, const char c);
 
-
-
-	#define GPIO_CRL_CLR 0x00000000	 
-	#define LCD_DB 0x00FF
-
-//	#define CG_RAM 0x0000 //adres poczatkowy obszaru grafiki
-//	#define GA 0x0800 //adres poczatkowy obszaru grafiki
-//	#define TA 0x2600 //adres poczatkowy obszaru tekstu
 	
 	#define CG_RAM 0x7800 
 	#define GA 0x0800 //graphic home adress
 	#define TA 0x2000 //text home adress
 	
 	
-	void lcd_init(void);
-	void init_text_ram(unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height); 
-	void init_graph_ram(unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height); 
+	void lcd_init(LCDdata *lcdData);
+	void init_text_ram(LCDdata *lcdData, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height); 
+	void init_graph_ram(LCDdata *lcdData, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height); 
+	void init_CGRAM(LCDdata *lcdData, const unsigned int *sign, unsigned int size, unsigned int id);
 	
 	void send_icon_ram(LCDdata *data, const unsigned char *buffer);
 
-	void lcd_write_0cmd(unsigned char cmd);
-	void lcd_write_1cmd(unsigned char arg, unsigned char cmd);
-	void lcd_write_2cmd(unsigned char arg1, unsigned char arg2, unsigned char cmd);
-	void lcd_hwd_init(void);
-	void wr_lcd_bus(unsigned char data);
-	unsigned char rd_lcd_bus(void);
-	void lcd_write_data(unsigned char data);
-	unsigned char lcd_read_data(void);
-	void lcd_write_cmd(unsigned char cmd);
-	unsigned char lcd_read_status(void);
-	static void DataLinesIn(void);
-	static void DataLinesOut(void);
-	void init_CGRAM(const unsigned int *sign, unsigned int size, unsigned int id);
+	void lcd_write_0cmd(LCDdata *lcdData, unsigned char cmd);
+	void lcd_write_1cmd(LCDdata *lcdData, unsigned char arg, unsigned char cmd);
+	void lcd_write_2cmd(LCDdata *lcdData, unsigned char arg1, unsigned char arg2, unsigned char cmd);
+	
+	void lcd_hwd_init(LCDdata *lcdData);
+	void wr_lcd_bus(LCDdata *lcdData, unsigned char data);
+	unsigned char rd_lcd_bus(LCDdata *lcdData);
+	void lcd_write_data(LCDdata *lcdData, unsigned char data);
+	unsigned char lcd_read_data(LCDdata *lcdData);
+	void lcd_write_cmd(LCDdata *lcdData, unsigned char cmd);
+	unsigned char lcd_read_status(LCDdata *lcdData);
+	static void DataLinesIn(LCDdata *lcdData);
+	static void DataLinesOut(LCDdata *lcdData);
 	
 #endif

@@ -1,22 +1,29 @@
 #include "pp_lcdgraph.h"
 
 
-void PLCDgraphConstruct(PLCDgraph *lcd){
+void PLCDgraphConstruct(PLCDgraph *lcd, uPin *outputsPins, uPortMask *outputsPortMask, int outputsPortMaskSize){
 	
-			lcd->data.posX=0;
-			lcd->data.posY=0;
-			lcd->data.posGraphX=0;
-			lcd->data.posGraphX=0;
+//			lcd->data.posX=0;
+//			lcd->data.posY=0;
+//			lcd->data.posGraphX=0;
+//			lcd->data.posGraphX=0;
+//	
+//			lcd->data.typeOfFont=BASE_FONT;
+//			lcd->data.bold=false;
+//			lcd->data.blink=false;
+//			lcd->data.reverse=false;
+//			lcd->data.textAtribiuteModeEnable=false;
+//			lcd->data.cursorEnable=false;
 	
-			lcd->data.typeOfFont=BASE_FONT;
-			lcd->data.bold=false;
-			lcd->data.blink=false;
-			lcd->data.reverse=false;
-			lcd->data.textAtribiuteModeEnable=false;
-			lcd->data.cursorEnable=false;
+			LCDsetIO(&lcd->data, outputsPins, outputsPortMask, outputsPortMaskSize);
+			lcd_init(&lcd->data);
+			LCDreset(&lcd->data, 1);
 	
 			lcd->setTextAtribiuteModeEnable=LCDsetTextAtribiuteModeEnable;
-			lcd->setTextAtribiuteOnTheArea=LCDsetTextAtribiuteOnTheArea;
+			lcd->setReverse=LCDsetReverse;
+			lcd->setBlink=LCDsetBlink;
+			lcd->writeTextAtribiutesOnTheArea=LCDwriteTextAtribiutesOnTheArea;
+			lcd->setIndependentWriteTextAtribiutes=LCDsetIndependentWriteTextAtribiutes;
 			lcd->clearTextAtribiuteOnTheArea=LCDclearTextAtribiuteOnTheArea;
 			lcd->setCursorEnable=LCDsetCursorEnable;
 			lcd->seekCursor=LCDseekCursor;
@@ -35,7 +42,8 @@ void PLCDgraphConstruct(PLCDgraph *lcd){
 	//		lcd->writeWrap=LCDwriteWrap;
 	
 	
-			lcd->drawIcon=send_icon_ram;
+			lcd->drawIcon=send_icon_ram;	
+			
 }
 
 void LCDreset(LCDdata *data, unsigned int noOfPageToClear){
@@ -43,7 +51,7 @@ void LCDreset(LCDdata *data, unsigned int noOfPageToClear){
 		LCDclearPages(data, 0, noOfPageToClear);
 		LCDgotoPage(data, 0);
 		LCDsetTextAtribiuteModeEnable(data, false);
-		LCDseekCursor(data, L_KOLUMN_LCD, 0);
+		LCDseekCursor(data, LCD_COLUMNS, 0);
 		LCDsetCursorEnable(data, false);
 	
 }

@@ -15,8 +15,14 @@
 			void (*reset)(LCDdata *data, unsigned int noOfPageToClear);
 			
 			void (*setTextAtribiuteModeEnable)(LCDdata* data, _Bool enable);
-			void (*setTextAtribiuteOnTheArea)(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
+			void (*setReverse)(LCDdata* data, _Bool reverse);
+			void (*setBlink)(LCDdata* data, _Bool blink);
+			
+			void (*writeTextAtribiutesOnTheArea)(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
+			void (*setIndependentWriteTextAtribiutes)(LCDdata* data, _Bool indWrite);
+			
 			void (*clearTextAtribiuteOnTheArea)(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
+			
 			void (*setCursorEnable)(LCDdata* data, _Bool enable);
 			void (*seekCursor)(LCDdata *data, unsigned int cursorX, unsigned int cursorY);
 			
@@ -34,7 +40,7 @@
 			void (*drawIcon)(LCDdata *data, const unsigned char *buffer);
 		}PLCDgraph;
 
-		void PLCDgraphConstruct(PLCDgraph *lcd);
+		void PLCDgraphConstruct(PLCDgraph *lcd, uPin *outputsPins, uPortMask *outputsPortMask, int outputsPortMaskSize);
 		
 		void LCDreset(LCDdata *data, unsigned int noOfPageToClear);
 

@@ -29,18 +29,43 @@ extern const unsigned char markPP_underline[];
 const SFont infoFont[2]={{8,1},{0x18, 0x02}};
 
 
+void LCDsetIO(LCDdata *data, uPin *outputsPins, uPortMask *outputsPortMask, int outputsPortMaskSize){
+	
+			data->outputsPins=outputsPins;
+			data->outputsPortMask=outputsPortMask;
+			data->outputsPortMaskSize=outputsPortMaskSize;
+	
+			for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
+				for(int j=0; j<data->outputsPortMaskSize; j++){
+					if(data->outputsPortMask[j].port==data->outputsPins[i].port)data->outputsPortMask[j].clrMask|= (1<<data->outputsPins[i].pin);
+				}
+			}
+	
+}
+
 void LCDsetTextAtribiuteModeEnable(LCDdata* data, _Bool enable){
 	
 	data->textAtribiuteModeEnable=enable;
 	
-	if(data->textAtribiuteModeEnable)lcd_write_0cmd(0x84);	
+	if(data->textAtribiuteModeEnable)lcd_write_0cmd(data, 0x84);	
 	else{
-		lcd_write_0cmd(0x80);	
+		lcd_write_0cmd(data, 0x80);	
 		data->blink=false;
 		data->bold=false;
 		data->reverse=false;
-		data->dependenceAtribiutesOnArea=false;
+		data->independentWriteTextAtribiutes=false;
 	}
+}
+
+void LCDsetReverse(LCDdata* data, _Bool reverse){
+	
+		data->reverse=reverse;
+	
+}
+
+void LCDsetBlink(LCDdata* data, _Bool blink){
+	
+	data->blink=blink;
 }
 
 void LCDsetCursorEnable(LCDdata* data, _Bool enable){
@@ -48,25 +73,24 @@ void LCDsetCursorEnable(LCDdata* data, _Bool enable){
 	data->cursorEnable=enable;
 	
 	if(data->cursorEnable){
-		lcd_write_0cmd(0x9F);	//display ON + cursor
+		lcd_write_0cmd(data, 0x9F);	//display ON + cursor
 	}else{
-		lcd_write_0cmd(0x9c);//display ON
+		lcd_write_0cmd(data, 0x9c);//display ON
 	}
 
 }
 
 void LCDseekCursor(LCDdata *data, unsigned int cursorX, unsigned int cursorY){
 	
-	lcd_write_2cmd(cursorY,cursorX,0x21);
+	lcd_write_2cmd(data, cursorY,cursorX,0x21);
 }
 
 
 void LCDintro(LCDdata* data){
 	extern const unsigned char logoZAPppLarge[]; 
-	extern const unsigned char logoZAPbp[]; 
 			
 		LCDgotoGraph(data, 6, 28);
-		send_icon_ram(data, logoZAPbp);
+		send_icon_ram(data, logoZAPppLarge);
 
 
 //		LCDgotoGraph(data, 1, 29);
@@ -167,47 +191,53 @@ void LCDputchar(LCDdata *data, const unsigned char c) {
 		} 
 		
 		unsigned int pos=TA+(data->posY*LCD_COLUMNS)+data->posX;
-		lcd_write_2cmd(((pos>>8) & 0xff),(pos & 0xff),0x24);//address pointer set 
+		lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x24);//address pointer set 
 		
 		if(c>=0x80){
-			lcd_write_1cmd(c,0xc0);
+			lcd_write_1cmd(data, c,0xc0);
 		}else{
-			lcd_write_1cmd(c-0x20,0xc0);
+			lcd_write_1cmd(data, c-0x20,0xc0);
 		}
 		
-		if(!data->dependenceAtribiutesOnArea)LCDsetTextAtribiuteOnTheArea(data, data->posX, data->posY, 1, 1);
+		if(!data->independentWriteTextAtribiutes)LCDwriteTextAtribiutesOnTheArea(data, data->posX, data->posY, 1, 1);
 		
 		(data->posX)++;
 	}
 }
 
 
-void LCDsetTextAtribiuteOnTheArea(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height){
+void LCDsetIndependentWriteTextAtribiutes(LCDdata* data, _Bool indWrite){
+	
+	data->independentWriteTextAtribiutes=indWrite;
+	
+}
+
+void LCDwriteTextAtribiutesOnTheArea(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height){
 	
 		if(data->textAtribiuteModeEnable){
 			unsigned int pos=GA+(posY*LCD_COLUMNS)+posX;
-			lcd_write_2cmd(((pos>>8) & 0xff),(pos & 0xff),0x24);//address pointer set 
+			lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x24);//address pointer set 
 			
 			for(int i=0;i<height;i++){
 				
 				for(int j=0;j<width;j++){ 
 					if(data->reverse){
 						if(data->blink){
-							lcd_write_1cmd(0xD,0xc0);
+							lcd_write_1cmd(data, 0xD,0xc0);
 						}else{
-							lcd_write_1cmd(0x5,0xc0);
+							lcd_write_1cmd(data, 0x5,0xc0);
 						}
 					}else{
-						if(data->bold && data->blink) lcd_write_1cmd(0xF,0xc0);
-						else if(data->bold)lcd_write_1cmd(0x7,0xc0);
-						else if(data->blink)lcd_write_1cmd(0x8,0xc0);
-						else lcd_write_1cmd(0x0,0xc0);
+						if(data->bold && data->blink) lcd_write_1cmd(data, 0xF,0xc0);
+						else if(data->bold)lcd_write_1cmd(data, 0x7,0xc0);
+						else if(data->blink)lcd_write_1cmd(data, 0x8,0xc0);
+						else lcd_write_1cmd(data, 0x0,0xc0);
 					}
 					pos++;
 				}
 
 				pos+=(LCD_COLUMNS-width);
-				lcd_write_2cmd(((pos>>8) & 0xff),(pos & 0xff),0x24);
+				lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x24);
 			}
 		}
 }
@@ -216,21 +246,21 @@ void LCDclearTextAtribiuteOnTheArea(LCDdata *data, unsigned int posX, unsigned i
 	
 		if(data->textAtribiuteModeEnable){
 			unsigned int pos=GA+(posY*LCD_COLUMNS)+posX;
-			lcd_write_2cmd(((pos>>8) & 0xff),(pos & 0xff),0x24);//address pointer set 
+			lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x24);//address pointer set 
 			
-			lcd_write_0cmd(0xb0);//data auto write
+			lcd_write_0cmd(data, 0xb0);//data auto write
 			for(int i=0;i<height;i++){
 				for(int j=0;j<width;j++){ 
-					while((lcd_read_status()&8)!=8);
-					lcd_write_data(0x0);
+					while((lcd_read_status(data)&8)!=8);
+					lcd_write_data(data, 0x0);
 					pos++;
 				}
-				lcd_write_0cmd(0xb2);//reset auto write
+				lcd_write_0cmd(data, 0xb2);//reset auto write
 				pos+=(LCD_COLUMNS-width);
-				lcd_write_2cmd(((pos>>8) & 0xff),(pos & 0xff),0x24);
-				lcd_write_0cmd(0xb0);//data auto write
+				lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x24);
+				lcd_write_0cmd(data, 0xb0);//data auto write
 			}
-			lcd_write_0cmd(0xb2);//reset auto write
+			lcd_write_0cmd(data, 0xb2);//reset auto write
 			
 		}
 }
@@ -249,7 +279,7 @@ void LCDgotoPage(LCDdata *data, unsigned int page){
 
 	if(page<LCD_PAGES){
 		unsigned int pos=TA+page*(LCD_ROWS*LCD_COLUMNS); 
-		lcd_write_2cmd(((pos>>8) & 0xff),(pos & 0xff),0x40);
+		lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x40);
 		data->posX=0;
 		data->posY=0;	
 	}
@@ -259,12 +289,12 @@ void LCDgotoPage(LCDdata *data, unsigned int page){
 }
 
 void LCDclear(LCDdata *data, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height) {
-  init_text_ram(x_start, y_start, width, height);//clear VRAM
+  init_text_ram(data, x_start, y_start, width, height);//clear VRAM
 	
 	data->blink=false;
 	data->bold=false;
 	data->reverse=false;
-	LCDsetTextAtribiuteOnTheArea(data, x_start, y_start, width, height);
+	LCDwriteTextAtribiutesOnTheArea(data, x_start, y_start, width, height);
 	
 	
 	LCDgoto(data, x_start, y_start);
@@ -287,7 +317,7 @@ void LCDgotoFontGraph(LCDdata *data, unsigned int lcd_X, unsigned int lcd_Y) {
 
 void LCDclearFontGraph(LCDdata *data, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height) {
 
-	init_graph_ram(x_start*infoFont[data->typeOfFont].width, y_start*infoFont[data->typeOfFont].height, width*infoFont[data->typeOfFont].width, height*infoFont[data->typeOfFont].height);
+	init_graph_ram(data, x_start*infoFont[data->typeOfFont].width, y_start*infoFont[data->typeOfFont].height, width*infoFont[data->typeOfFont].width, height*infoFont[data->typeOfFont].height);
 	LCDgotoFontGraph(data, x_start, y_start);
 }
 
@@ -311,7 +341,7 @@ void LCDgotoGraphPage(LCDdata *data, unsigned int page){
 		}else{
 			pos=GA+page*(LCD_ROWS*LCD_COLUMNS); 
 		}
-		lcd_write_2cmd(((pos>>8) & 0xff),(pos & 0xff),0x42);//graphic home adress set 
+		lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x42);//graphic home adress set 
 		data->posGraphX=0;
 		data->posGraphY=0;
 		
@@ -321,7 +351,7 @@ void LCDgotoGraphPage(LCDdata *data, unsigned int page){
 
 void LCDclearGraph(LCDdata *data, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height) {
 
-	init_graph_ram(x_start, y_start, width, height);
+	init_graph_ram(data, x_start, y_start, width, height);
 	LCDgotoGraph(data, x_start, y_start);
 }
 
@@ -333,7 +363,7 @@ void LCDclearPagesGraph(LCDdata *data, unsigned int firstPage, unsigned int last
 
 
 
-void lcd_init(void){
+void lcd_init(LCDdata *lcdData){
 	unsigned int area;
 	unsigned int charPP_a[8]={0x00, 0x0e, 0x01, 0x0f, 0x11, 0x0f, 0x02, 0x03};		//ą
 	unsigned int charPP_c[8]={0x02, 0x04, 0x00, 0x0e, 0x10, 0x10, 0x0e, 0x00};		//ć
@@ -366,168 +396,168 @@ void lcd_init(void){
 	unsigned int charPP_omega[8]={0x00,0x00,0x0A,0x11,0x15,0x15,0x0A,0x00};
 	unsigned int charPP_copyright[8]={0x3E,0x63,0x5D,0x51,0x5D,0x63,0x3E,0x00};
 	
-	lcd_hwd_init();
+	lcd_hwd_init(lcdData);
 	
-	lcd_write_0cmd(0x80);		//OR, internal CG mode
+	lcd_write_0cmd(lcdData, 0x80);		//OR, internal CG mode
 	area=GA;
-	lcd_write_2cmd(((area>>8) & 0xff),(area & 0xff),0x42);//graphic home adress set
-	lcd_write_2cmd(0,LCD_COLUMNS,0x43);				//graphic area 30*8=240 
+	lcd_write_2cmd(lcdData, ((area>>8) & 0xff),(area & 0xff),0x42);//graphic home adress set
+	lcd_write_2cmd(lcdData, 0,LCD_COLUMNS,0x43);				//graphic area 30*8=240 
 	area=TA;
-	lcd_write_2cmd(((area>>8) & 0xff),(area & 0xff),0x40);//text home address
-	lcd_write_2cmd(0,LCD_COLUMNS,0x41);			//text area 30*8=240
-	lcd_write_2cmd(0,15,0x22);//offset external CG RAM 
+	lcd_write_2cmd(lcdData, ((area>>8) & 0xff),(area & 0xff),0x40);//text home address
+	lcd_write_2cmd(lcdData, 0,LCD_COLUMNS,0x41);			//text area 30*8=240
+	lcd_write_2cmd(lcdData, 0,15,0x22);//offset external CG RAM 
 	
 	//special character indexes start with 0x80 (in case uses internal CG mode)
-	init_CGRAM(charPP_a, 8, 0xA0);
-	init_CGRAM(charPP_c, 8, 0xA1);
-	init_CGRAM(charPP_e, 8, 0xA2);
-	init_CGRAM(charPP_l, 8, 0xA3);
-	init_CGRAM(charPP_n, 8, 0xA4);
-	init_CGRAM(charPP_o, 8, 0xA5);
-	init_CGRAM(charPP_s, 8, 0xA6);
-	init_CGRAM(charPP_z, 8, 0xA7);
-	init_CGRAM(charPP_x, 8, 0xA8);
-	init_CGRAM(charPP_s6, 8, 0xA9);
-	init_CGRAM(charPP_s4, 8, 0xAA);
-	init_CGRAM(charPP_s9, 8, 0xAB);
-	init_CGRAM(charPP_s1, 8, 0xAC);
-	init_CGRAM(charPP_s8, 8, 0xAD);
-	init_CGRAM(charPP_s2, 8, 0xAE);
-	init_CGRAM(charPP_ok, 8, 0xAF);
-	init_CGRAM(charPP_circle, 8, 0xB0);
-	init_CGRAM(charPP_square, 8, 0xB1);
-	init_CGRAM(charPP_progress, 8, 0xB2);
-	init_CGRAM(charPP_underline, 8, 0xB3);
-	init_CGRAM(charPP_right_arrow, 8, 0xB4);
+	init_CGRAM(lcdData, charPP_a, 8, 0xA0);
+	init_CGRAM(lcdData, charPP_c, 8, 0xA1);
+	init_CGRAM(lcdData, charPP_e, 8, 0xA2);
+	init_CGRAM(lcdData, charPP_l, 8, 0xA3);
+	init_CGRAM(lcdData, charPP_n, 8, 0xA4);
+	init_CGRAM(lcdData, charPP_o, 8, 0xA5);
+	init_CGRAM(lcdData, charPP_s, 8, 0xA6);
+	init_CGRAM(lcdData, charPP_z, 8, 0xA7);
+	init_CGRAM(lcdData, charPP_x, 8, 0xA8);
+	init_CGRAM(lcdData, charPP_s6, 8, 0xA9);
+	init_CGRAM(lcdData, charPP_s4, 8, 0xAA);
+	init_CGRAM(lcdData, charPP_s9, 8, 0xAB);
+	init_CGRAM(lcdData, charPP_s1, 8, 0xAC);
+	init_CGRAM(lcdData, charPP_s8, 8, 0xAD);
+	init_CGRAM(lcdData, charPP_s2, 8, 0xAE);
+	init_CGRAM(lcdData, charPP_ok, 8, 0xAF);
+	init_CGRAM(lcdData, charPP_circle, 8, 0xB0);
+	init_CGRAM(lcdData, charPP_square, 8, 0xB1);
+	init_CGRAM(lcdData, charPP_progress, 8, 0xB2);
+	init_CGRAM(lcdData, charPP_underline, 8, 0xB3);
+	init_CGRAM(lcdData, charPP_right_arrow, 8, 0xB4);
 	
-	init_CGRAM(charPP_u, 8, 0xB5);
-	init_CGRAM(charPP_2, 8, 0xB6);
-	init_CGRAM(charPP_round, 8, 0xB7);
-	init_CGRAM(charPP_backspace, 8, 0xB8);
-	init_CGRAM(charPP_mm, 8, 0xB9);
-	init_CGRAM(charPP_um, 8, 0xBA);
-	init_CGRAM(charPP_div_s, 8, 0xBB);
-	init_CGRAM(charPP_omega, 8, 0xBC);
-	init_CGRAM(charPP_copyright, 8, 0xBD);
+	init_CGRAM(lcdData, charPP_u, 8, 0xB5);
+	init_CGRAM(lcdData, charPP_2, 8, 0xB6);
+	init_CGRAM(lcdData, charPP_round, 8, 0xB7);
+	init_CGRAM(lcdData, charPP_backspace, 8, 0xB8);
+	init_CGRAM(lcdData, charPP_mm, 8, 0xB9);
+	init_CGRAM(lcdData, charPP_um, 8, 0xBA);
+	init_CGRAM(lcdData, charPP_div_s, 8, 0xBB);
+	init_CGRAM(lcdData, charPP_omega, 8, 0xBC);
+	init_CGRAM(lcdData, charPP_copyright, 8, 0xBD);
 	
-	init_text_ram(0, 0, LCD_COLUMNS, LCD_MAX_ROWS);
-	init_graph_ram(0, 0, LCD_COLUMNS, LCD_MAX_ROWS_GRAPH);
+	init_text_ram(lcdData, 0, 0, LCD_COLUMNS, LCD_MAX_ROWS);
+	init_graph_ram(lcdData, 0, 0, LCD_COLUMNS, LCD_MAX_ROWS_GRAPH);
 	
 //	lcd_write_2cmd(0,0x2,0x50);//set blink time =0.5s
 	
-	lcd_write_0cmd(0xA1);//cursor pattern select =2 lines
+	lcd_write_0cmd(lcdData, 0xA1);//cursor pattern select =2 lines
 	
-  lcd_write_0cmd(0x9c);//display ON
+  lcd_write_0cmd(lcdData, 0x9c);//display ON
 	
 }
 
-void init_CGRAM(const unsigned int *sign, unsigned int size, unsigned int id){
+void init_CGRAM(LCDdata *lcdData, const unsigned int *sign, unsigned int size, unsigned int id){
 	
 	unsigned int pos=CG_RAM+(id*8);
 	
-	lcd_write_2cmd(((pos>>8) & 0xFF),(pos & 0xFF),0x24);
-	lcd_write_0cmd(0xb0);//data auto write
+	lcd_write_2cmd(lcdData, ((pos>>8) & 0xFF),(pos & 0xFF),0x24);
+	lcd_write_0cmd(lcdData, 0xb0);//data auto write
 	for(int i=0;i<size;i++){
-		while((lcd_read_status()&8)!=8);
-		lcd_write_data(sign[i]);
+		while((lcd_read_status(lcdData)&8)!=8);
+		lcd_write_data(lcdData, sign[i]);
 	}
-	lcd_write_0cmd(0xb2);//reset auto write
+	lcd_write_0cmd(lcdData, 0xb2);//reset auto write
 }
 
-void init_text_ram(unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height){
+void init_text_ram(LCDdata *lcdData, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height){
 	unsigned int px_start=0;
 	
 	px_start=TA;
 	px_start+=x_start;
 	px_start+=y_start*LCD_COLUMNS;
 
-	lcd_write_2cmd(((px_start>>8) & 0xff),(px_start & 0xff),0x24);//address pointer set 
-	lcd_write_0cmd(0xb0);//data auto write
+	lcd_write_2cmd(lcdData, ((px_start>>8) & 0xff),(px_start & 0xff),0x24);//address pointer set 
+	lcd_write_0cmd(lcdData, 0xb0);//data auto write
 	for(int i=0;i<height;i++){
 		for(int j=0;j<width;j++){ 
-			while((lcd_read_status()&8)!=8);
-			lcd_write_data(0);
+			while((lcd_read_status(lcdData)&8)!=8);
+			lcd_write_data(lcdData, 0);
 			px_start++;
 		}
-		lcd_write_0cmd(0xb2);//reset auto write
+		lcd_write_0cmd(lcdData, 0xb2);//reset auto write
 		px_start=px_start+(LCD_COLUMNS-width);
-		lcd_write_2cmd(((px_start>>8) & 0xff),(px_start & 0xff),0x24);//address pointer set
-		lcd_write_0cmd(0xb0);//data auto write 
+		lcd_write_2cmd(lcdData, ((px_start>>8) & 0xff),(px_start & 0xff),0x24);//address pointer set
+		lcd_write_0cmd(lcdData, 0xb0);//data auto write 
 	}
-	lcd_write_0cmd(0xb2);//reset auto write
+	lcd_write_0cmd(lcdData, 0xb2);//reset auto write
 
 }
 
-void init_graph_ram(unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height){
+void init_graph_ram(LCDdata *lcdData, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height){
 	unsigned int px_start=0;
 	
 	px_start=GA;
 	px_start+=x_start;
 	px_start+=y_start*LCD_COLUMNS;
 
-	lcd_write_2cmd(((px_start>>8) & 0xff),(px_start & 0xff),0x24);//address pointer set 
-	lcd_write_0cmd(0xb0);//data auto write
+	lcd_write_2cmd(lcdData, ((px_start>>8) & 0xff),(px_start & 0xff),0x24);//address pointer set 
+	lcd_write_0cmd(lcdData, 0xb0);//data auto write
 	for(int i=0;i<height;i++){
 		for(int j=0;j<width;j++){ 
-			while((lcd_read_status()&8)!=8);
-			lcd_write_data(0);
+			while((lcd_read_status(lcdData)&8)!=8);
+			lcd_write_data(lcdData, 0);
 			px_start++;
 		}
-		lcd_write_0cmd(0xb2);//reset auto write
+		lcd_write_0cmd(lcdData, 0xb2);//reset auto write
 		px_start=px_start+(LCD_COLUMNS-width);
-		lcd_write_2cmd(((px_start>>8) & 0xff),(px_start & 0xff),0x24);//address pointer set
-		lcd_write_0cmd(0xb0);//data auto write 
+		lcd_write_2cmd(lcdData, ((px_start>>8) & 0xff),(px_start & 0xff),0x24);//address pointer set
+		lcd_write_0cmd(lcdData, 0xb0);//data auto write 
 	}
-	lcd_write_0cmd(0xb2);//reset auto write	
+	lcd_write_0cmd(lcdData, 0xb2);//reset auto write	
 }
 
 
 
-void send_icon_ram(LCDdata *data, const unsigned char *buffer){
+void send_icon_ram(LCDdata *lcdData, const unsigned char *buffer){
 	unsigned int iz, jz, point=0;
 	
 	iz=*buffer++;
 	jz=*buffer++;
-	point=GA+(data->posGraphY*LCD_COLUMNS)+data->posGraphX;
-	lcd_write_2cmd(((point>>8) & 0xff),(point & 0xff),0x24);//address pointer set 
+	point=GA+(lcdData->posGraphY*LCD_COLUMNS)+lcdData->posGraphX;
+	lcd_write_2cmd(lcdData, ((point>>8) & 0xff),(point & 0xff),0x24);//address pointer set 
 	
-	lcd_write_0cmd(0xb0);//data auto write
+	lcd_write_0cmd(lcdData, 0xb0);//data auto write
 	for(int i=0;i<iz;i++){
 		for(int j=0;j<jz;j++){ 
-			while((lcd_read_status()&8)!=8);
-			lcd_write_data(*buffer++);
+			while((lcd_read_status(lcdData)&8)!=8);
+			lcd_write_data(lcdData, *buffer++);
 			point++;
 		}
-		lcd_write_0cmd(0xb2);//reset auto write
+		lcd_write_0cmd(lcdData, 0xb2);//reset auto write
 		point=point+(LCD_COLUMNS-jz);
-		lcd_write_2cmd(((point>>8) & 0xff),(point & 0xff),0x24);//address pointer set
-		lcd_write_0cmd(0xb0);//data auto write 
+		lcd_write_2cmd(lcdData, ((point>>8) & 0xff),(point & 0xff),0x24);//address pointer set
+		lcd_write_0cmd(lcdData, 0xb0);//data auto write 
 	}
-	lcd_write_0cmd(0xb2);//reset auto write
+	lcd_write_0cmd(lcdData, 0xb2);//reset auto write
 	
 }
 
 
-void lcd_write_0cmd(unsigned char cmd){
-	while((lcd_read_status()&3)!=3);
-	lcd_write_cmd(cmd);
+void lcd_write_0cmd(LCDdata *lcdData, unsigned char cmd){
+	while((lcd_read_status(lcdData)&3)!=3);
+	lcd_write_cmd(lcdData, cmd);
 }
 
 
-void lcd_write_1cmd(unsigned char arg, unsigned char cmd){
- 	while((lcd_read_status()&3)!=3);
-	lcd_write_data(arg);
-	while((lcd_read_status()&3)!=3); 
-	lcd_write_cmd(cmd);
+void lcd_write_1cmd(LCDdata *lcdData, unsigned char arg, unsigned char cmd){
+ 	while((lcd_read_status(lcdData)&3)!=3);
+	lcd_write_data(lcdData, arg);
+	while((lcd_read_status(lcdData)&3)!=3); 
+	lcd_write_cmd(lcdData, cmd);
 }
 
-void lcd_write_2cmd(unsigned char arg1, unsigned char arg2, unsigned char cmd){
- 	while((lcd_read_status()&3)!=3);
-	lcd_write_data(arg2);
-	while((lcd_read_status()&3)!=3);
-	lcd_write_data(arg1);
-	while((lcd_read_status()&3)!=3);
-	lcd_write_cmd(cmd);
+void lcd_write_2cmd(LCDdata *lcdData, unsigned char arg1, unsigned char arg2, unsigned char cmd){
+ 	while((lcd_read_status(lcdData)&3)!=3);
+	lcd_write_data(lcdData, arg2);
+	while((lcd_read_status(lcdData)&3)!=3);
+	lcd_write_data(lcdData, arg1);
+	while((lcd_read_status(lcdData)&3)!=3);
+	lcd_write_cmd(lcdData, cmd);
 }
 
 
@@ -535,91 +565,105 @@ void lcd_write_2cmd(unsigned char arg1, unsigned char arg2, unsigned char cmd){
 //hardware procedures
 //***************************************************************
 
-void lcd_hwd_init(void){
+void lcd_hwd_init(LCDdata *lcdData){
 
-	PIN_CLR(LCD_PORT, RES);	
+	PIN_CLR(lcdData->outputsPins[RES].port, (1<<lcdData->outputsPins[RES].pin));	
 	delay_ms(50);
-	PIN_SET(LCD_PORT, RES);
-	PIN_SET(LCD_PORT, (WR|RD|CD|CE));	delay(2);
+	PIN_SET(lcdData->outputsPins[RES].port, (1<<lcdData->outputsPins[RES].pin));	
+	PIN_SET(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
+	PIN_SET(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));
+	PIN_SET(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin));
+	PIN_SET(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));
+	delay(2);
 	
 }
 
 
-void lcd_write_data(unsigned char data){
- 	PIN_CLR(LCD_PORT, CD);
-	PIN_SET(LCD_PORT, RD);	delay(2);
-	wr_lcd_bus(data);
+void lcd_write_data(LCDdata *lcdData, unsigned char data){
+ 	PIN_CLR(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
+	PIN_SET(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));	
+	delay(2);
+	wr_lcd_bus(lcdData, data);
 }
 
-void lcd_write_cmd(unsigned char cmd){
-		PIN_SET(LCD_PORT, CD);	
-		PIN_SET(LCD_PORT, RD);	delay(2);   
-		wr_lcd_bus(cmd);
+void lcd_write_cmd(LCDdata *lcdData, unsigned char cmd){
+		PIN_SET(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
+		PIN_SET(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));	
+		delay(2);   
+		wr_lcd_bus(lcdData, cmd);
 }
 
-unsigned char lcd_read_data(void){
-		PIN_CLR(LCD_PORT, CD);
-		PIN_SET(LCD_PORT, WR);	delay(2); 
-		return(rd_lcd_bus());
-}
-
-
-unsigned char lcd_read_status(void){
-		PIN_SET(LCD_PORT, CD);
-		PIN_SET(LCD_PORT, WR);	delay(2); 
-		return(rd_lcd_bus());
+unsigned char lcd_read_data(LCDdata *lcdData){
+		PIN_CLR(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
+		PIN_SET(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin));	
+		delay(2); 
+		return(rd_lcd_bus(lcdData));
 }
 
 
-unsigned char rd_lcd_bus(void){
+unsigned char lcd_read_status(LCDdata *lcdData){
+		PIN_SET(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
+		PIN_SET(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin)); 
+		delay(2); 
+		return(rd_lcd_bus(lcdData));
+}
+
+
+unsigned char rd_lcd_bus(LCDdata *lcdData){
 		unsigned char data;
-		DataLinesIn(); 
-		PIN_CLR(LCD_PORT, CE);	
-		PIN_CLR(LCD_PORT, RD);	delay(2); 
-		data=LCD_PORT->IDR&LCD_DB; 	
-		PIN_SET(LCD_PORT, RD);	
-		PIN_SET(LCD_PORT, CE);	
+		DataLinesIn(lcdData); 
+	 	PIN_CLR(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));
+		PIN_CLR(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));	
+		delay(2); 
+
+		for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
+				data|=((lcdData->outputsPins[i].port->IDR>>lcdData->outputsPins[i].pin) & 0x1)<<i;
+		}
+	
+		PIN_SET(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));
+		PIN_SET(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));	
 		return(data);
 }
 
 
-void wr_lcd_bus(unsigned char data){
-		DataLinesOut(); 
-		LCD_PORT->ODR&=~LCD_DB;
-		LCD_PORT->ODR|=data;
+void wr_lcd_bus(LCDdata *lcdData, unsigned char data){
+		DataLinesOut(lcdData); 
+
+		for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
+			for(int j=0; j<lcdData->outputsPortMaskSize; j++){
+				if(lcdData->outputsPortMask[j].port==lcdData->outputsPins[i].port)lcdData->outputsPortMask[j].mask|= (((data>>i) & 0x1)<<lcdData->outputsPins[i].pin);
+			}
+		}
+		
+		for(int i=0; i<lcdData->outputsPortMaskSize; i++){	
+			lcdData->outputsPortMask[i].port->ODR=(lcdData->outputsPortMask[i].port->ODR & ~(lcdData->outputsPortMask[i].clrMask)) | lcdData->outputsPortMask[i].mask;
+			lcdData->outputsPortMask[i].mask=0;
+		}
+	
+	
 		delay(5);
-		PIN_CLR(LCD_PORT, CE);	
-		PIN_CLR(LCD_PORT, WR); 	delay(2);
-		PIN_SET(LCD_PORT, WR);	
-		PIN_SET(LCD_PORT, CE); 	
+		PIN_CLR(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));
+		PIN_CLR(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin));	
+		delay(2);
+		PIN_SET(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin));	
+		PIN_SET(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));
 }
 
 
-static void DataLinesIn(void) {
-
-	PIN_CLR(LCD_PORT, LCD_DB);
-
-	IN_SET_REG(LCD_PORT, Pin0, IO_IN_PU);	
-	IN_SET_REG(LCD_PORT, Pin1, IO_IN_PU);
-	IN_SET_REG(LCD_PORT, Pin2, IO_IN_PU);
-	IN_SET_REG(LCD_PORT, Pin3, IO_IN_PU);
-	IN_SET_REG(LCD_PORT, Pin4, IO_IN_PU);
-	IN_SET_REG(LCD_PORT, Pin5, IO_IN_PU);
-	IN_SET_REG(LCD_PORT, Pin6, IO_IN_PU);
-	IN_SET_REG(LCD_PORT, Pin7, IO_IN_PU);
-
+static void DataLinesIn(LCDdata *lcdData) {
+	
+	for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
+		PIN_CLR(lcdData->outputsPins[i].port, (1<<lcdData->outputsPins[i].pin));
+		IN_SET_REG(lcdData->outputsPins[i].port, lcdData->outputsPins[i].pin, IO_IN_PU);	
+	}
+	
 }
 
-static void DataLinesOut(void) {
+static void DataLinesOut(LCDdata *lcdData) {
 
-	OUT_SET_REG(LCD_PORT, Pin0, IO_OUT_HS);	
-	OUT_SET_REG(LCD_PORT, Pin1, IO_OUT_HS);
-	OUT_SET_REG(LCD_PORT, Pin2, IO_OUT_HS);
-	OUT_SET_REG(LCD_PORT, Pin3, IO_OUT_HS);
-	OUT_SET_REG(LCD_PORT, Pin4, IO_OUT_HS);
-	OUT_SET_REG(LCD_PORT, Pin5, IO_OUT_HS);
-	OUT_SET_REG(LCD_PORT, Pin6, IO_OUT_HS);
-	OUT_SET_REG(LCD_PORT, Pin7, IO_OUT_HS);
-
+	for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
+		OUT_SET_REG(lcdData->outputsPins[i].port, lcdData->outputsPins[i].pin, IO_OUT_HS);	
+	}
+	
 }
 
