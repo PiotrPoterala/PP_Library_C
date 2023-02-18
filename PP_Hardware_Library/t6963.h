@@ -54,6 +54,7 @@
 	#define LCD_MAX_ROWS (LCD_PAGES*LCD_ROWS)
 	#define LCD_MAX_ROWS_GRAPH (LCD_PAGES_GRAPH*LCD_ROWS_GRAPH)
 
+	void LCDsetFont(LCDdata* data, FontType typeOfFont);
 	void LCDsetTextAtribiuteModeEnable(LCDdata* data, _Bool enable);
 	void LCDsetReverse(LCDdata* data, _Bool reverse);
 	void LCDsetBlink(LCDdata* data, _Bool blink);
@@ -72,7 +73,6 @@
 	void LCDgotoPage(LCDdata *data, unsigned int page);
 	
 	void LCDgotoFontGraph(LCDdata *data, unsigned int lcd_X, unsigned int lcd_Y);
-	void LCDclearFontGraph(LCDdata *data, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height);
 
 	void LCDwriteTextAtribiutesOnTheArea(LCDdata *data, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
 	void LCDsetIndependentWriteTextAtribiutes(LCDdata* data, _Bool indWrite);
@@ -81,9 +81,7 @@
 	void LCDgotoGraph(LCDdata *data, unsigned int lcd_X, unsigned int lcd_Y);
 	void LCDgotoGraphPage(LCDdata *data, unsigned int page);
 	
-	void LCDputchar(LCDdata *data, const unsigned char c);
-
-	void LCDputcharGraph(LCDdata *data, const char c);
+	void LCDputchar(LCDdata *data, unsigned char c);
 
 	
 	#define CG_RAM 0x7800 

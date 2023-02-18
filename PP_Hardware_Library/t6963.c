@@ -43,12 +43,22 @@ void LCDsetIO(LCDdata *data, uPin *outputsPins, uPortMask *outputsPortMask, int 
 	
 }
 
+void LCDsetFont(LCDdata* data, FontType typeOfFont){
+	
+	data->typeOfFont=typeOfFont;
+	if(data->typeOfFont!=BASE_FONT)LCDsetTextAtribiuteModeEnable(data, false);
+	
+	
+}
+
 void LCDsetTextAtribiuteModeEnable(LCDdata* data, _Bool enable){
 	
 	data->textAtribiuteModeEnable=enable;
 	
-	if(data->textAtribiuteModeEnable)lcd_write_0cmd(data, 0x84);	
-	else{
+	if(data->textAtribiuteModeEnable){
+		lcd_write_0cmd(data, 0x84);	
+		data->typeOfFont=BASE_FONT;
+	}else{
 		lcd_write_0cmd(data, 0x80);	
 		data->blink=false;
 		data->bold=false;
@@ -88,120 +98,114 @@ void LCDseekCursor(LCDdata *data, unsigned int cursorX, unsigned int cursorY){
 
 void LCDintro(LCDdata* data){
 	extern const unsigned char logoZAPppLarge[]; 
-			
-		LCDgotoGraph(data, 6, 28);
+
+		LCDgotoGraph(data, 1, 29);
 		send_icon_ram(data, logoZAPppLarge);
-
-
-//		LCDgotoGraph(data, 1, 29);
-//		send_icon_ram(data, logoZAPppLarge);
 
 		delay_ms(3000);
 		LCDclearPages(data, 0, 0);
 }
 
+void LCDputchar(LCDdata *data, unsigned char c) {
 
-void LCDputcharGraph(LCDdata *data, const char c) {
-		
-  if (c == '\n'){
-		LCDgotoGraph(data, 0, data->posGraphY+infoFont[data->typeOfFont].height);
-  }else if (c == '\r'){
-		LCDgotoGraph(data, 0, data->posGraphY);
-  }else if (c == '\t'){
-		if(data->posGraphX+2<LCD_COLUMNS){
-			LCDgotoGraph(data, data->posGraphX+2, data->posGraphY); 
-		}
-  }else{
-		
-		if (data->posGraphX+infoFont[data->typeOfFont].width>LCD_COLUMNS){
-			LCDgotoGraph(data, 0, data->posGraphY+infoFont[data->typeOfFont].height); 
-		} 
-		
-		if(data->typeOfFont==FONT_1){
-			switch(c){	
-						case 'X':	send_icon_ram(data, markPP_X); 
-											break;
-						case 'Y':	send_icon_ram(data, markPP_Y); 
-											break;
-						case 'Z':	send_icon_ram(data, markPP_Z); 
-											break;
-						case 'A':	send_icon_ram(data, markPP_A);  
-											break;
-						case '|':	send_icon_ram(data, markPP_pipe); 
-											break;
-						case '<':	send_icon_ram(data, markPP_lessThan); 
-											break;
-						case '>':	send_icon_ram(data, markPP_greaterThan); 
-											break;
-						case '+':	send_icon_ram(data, markPP_plus); 
-											break;
-						case '-':	send_icon_ram(data, markPP_min); 
-											break;
-						case '=':	send_icon_ram(data, markPP_row); 
-											break;
-						case ':':	send_icon_ram(data, markPP_colon); 
-											break;
-						case '0':	send_icon_ram(data, markPP_0); 
-											break;					
-						case '1':	send_icon_ram(data, markPP_1); 
-											break;
-						case '2':	send_icon_ram(data, markPP_2); 
-											break;
-						case '3':	send_icon_ram(data, markPP_3); 
-											break;
-						case '4':	send_icon_ram(data, markPP_4); 
-											break;
-						case '5':	send_icon_ram(data, markPP_5); 
-											break;
-						case '6':	send_icon_ram(data, markPP_6); 
-											break;
-						case '7':	send_icon_ram(data, markPP_7);  
-											break;
-						case '8':	send_icon_ram(data, markPP_8); 
-											break;
-						case '9':	send_icon_ram(data, markPP_9); 
-											break;
-						case '.':	send_icon_ram(data, markPP_dot); 
-											break;
-						case '~':	send_icon_ram(data, markPP_underline); 
-											break;
-						default: send_icon_ram(data, markPP_space); 
-											break;
-					}
-				data->posGraphX+=infoFont[data->typeOfFont].width;
-			}
-  }
-}
-
-
-void LCDputchar(LCDdata *data, const unsigned char c) {
-
-
-  if (c == '\n'){
-		LCDgoto(data, 0, data->posY+1); 
-  }else if (c == '\r'){  
-		LCDgoto(data, 0, data->posY); 
-  }else if (c == '\t'){
-		if(data->posX+3<LCD_COLUMNS){
-			LCDgoto(data, data->posX+3, data->posY); 
-		}
-  }else{
-		if (data->posX+1>LCD_COLUMNS){
+	if(data->typeOfFont==BASE_FONT){
+		if (c == '\n'){
 			LCDgoto(data, 0, data->posY+1); 
-		} 
-		
-		unsigned int pos=TA+(data->posY*LCD_COLUMNS)+data->posX;
-		lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x24);//address pointer set 
-		
-		if(c>=0x80){
-			lcd_write_1cmd(data, c,0xc0);
+		}else if (c == '\r'){  
+			LCDgoto(data, 0, data->posY); 
+		}else if (c == '\t'){
+			if(data->posX+3<LCD_COLUMNS){
+				LCDgoto(data, data->posX+3, data->posY); 
+			}
 		}else{
-			lcd_write_1cmd(data, c-0x20,0xc0);
+			if(data->posX+1>LCD_COLUMNS){
+				LCDgoto(data, 0, data->posY+1); 
+			} 
+			
+			unsigned int pos=TA+(data->posY*LCD_COLUMNS)+data->posX;
+			lcd_write_2cmd(data, ((pos>>8) & 0xff),(pos & 0xff),0x24);//address pointer set 
+			
+			if(c>=0x80){
+				lcd_write_1cmd(data, c,0xc0);
+			}else{
+				lcd_write_1cmd(data, c-0x20,0xc0);
+			}
+			
+			if(!data->independentWriteTextAtribiutes)LCDwriteTextAtribiutesOnTheArea(data, data->posX, data->posY, 1, 1);
+			
+			(data->posX)++;
 		}
+	}else{
 		
-		if(!data->independentWriteTextAtribiutes)LCDwriteTextAtribiutesOnTheArea(data, data->posX, data->posY, 1, 1);
-		
-		(data->posX)++;
+		  if (c == '\n'){
+				LCDgotoGraph(data, 0, data->posGraphY+infoFont[data->typeOfFont].height);
+			}else if (c == '\r'){
+				LCDgotoGraph(data, 0, data->posGraphY);
+			}else if (c == '\t'){
+				if(data->posGraphX+2<LCD_COLUMNS){
+					LCDgotoGraph(data, data->posGraphX+2, data->posGraphY); 
+				}
+			}else{
+				
+				if (data->posGraphX+infoFont[data->typeOfFont].width>LCD_COLUMNS){
+					LCDgotoGraph(data, 0, data->posGraphY+infoFont[data->typeOfFont].height); 
+				} 
+				
+				if(data->typeOfFont==FONT_1){
+					switch(c){	
+								case 'X':	send_icon_ram(data, markPP_X); 
+													break;
+								case 'Y':	send_icon_ram(data, markPP_Y); 
+													break;
+								case 'Z':	send_icon_ram(data, markPP_Z); 
+													break;
+								case 'A':	send_icon_ram(data, markPP_A);  
+													break;
+								case '|':	send_icon_ram(data, markPP_pipe); 
+													break;
+								case '<':	send_icon_ram(data, markPP_lessThan); 
+													break;
+								case '>':	send_icon_ram(data, markPP_greaterThan); 
+													break;
+								case '+':	send_icon_ram(data, markPP_plus); 
+													break;
+								case '-':	send_icon_ram(data, markPP_min); 
+													break;
+								case '=':	send_icon_ram(data, markPP_row); 
+													break;
+								case ':':	send_icon_ram(data, markPP_colon); 
+													break;
+								case '0':	send_icon_ram(data, markPP_0); 
+													break;					
+								case '1':	send_icon_ram(data, markPP_1); 
+													break;
+								case '2':	send_icon_ram(data, markPP_2); 
+													break;
+								case '3':	send_icon_ram(data, markPP_3); 
+													break;
+								case '4':	send_icon_ram(data, markPP_4); 
+													break;
+								case '5':	send_icon_ram(data, markPP_5); 
+													break;
+								case '6':	send_icon_ram(data, markPP_6); 
+													break;
+								case '7':	send_icon_ram(data, markPP_7);  
+													break;
+								case '8':	send_icon_ram(data, markPP_8); 
+													break;
+								case '9':	send_icon_ram(data, markPP_9); 
+													break;
+								case '.':	send_icon_ram(data, markPP_dot); 
+													break;
+								case '~':	send_icon_ram(data, markPP_underline); 
+													break;
+								default: send_icon_ram(data, markPP_space); 
+													break;
+							}
+						data->posGraphX+=infoFont[data->typeOfFont].width;
+					}
+			}
+
 	}
 }
 
@@ -289,15 +293,22 @@ void LCDgotoPage(LCDdata *data, unsigned int page){
 }
 
 void LCDclear(LCDdata *data, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height) {
-  init_text_ram(data, x_start, y_start, width, height);//clear VRAM
 	
-	data->blink=false;
-	data->bold=false;
-	data->reverse=false;
-	LCDwriteTextAtribiutesOnTheArea(data, x_start, y_start, width, height);
-	
-	
-	LCDgoto(data, x_start, y_start);
+	if(data->typeOfFont==BASE_FONT){
+		init_text_ram(data, x_start, y_start, width, height);//clear VRAM
+		
+		data->blink=false;
+		data->bold=false;
+		data->reverse=false;
+		LCDwriteTextAtribiutesOnTheArea(data, x_start, y_start, width, height);
+		
+		LCDgoto(data, x_start, y_start);
+	}else{
+		
+		init_graph_ram(data, x_start*infoFont[data->typeOfFont].width, y_start*infoFont[data->typeOfFont].height, width*infoFont[data->typeOfFont].width, height*infoFont[data->typeOfFont].height);
+		LCDgotoFontGraph(data, x_start, y_start);
+		
+	}
 	
 }
 
@@ -314,13 +325,6 @@ void LCDgotoFontGraph(LCDdata *data, unsigned int lcd_X, unsigned int lcd_Y) {
 	data->posGraphX=lcd_X*infoFont[data->typeOfFont].width;
 	data->posGraphY=lcd_Y*infoFont[data->typeOfFont].height;
 }
-
-void LCDclearFontGraph(LCDdata *data, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height) {
-
-	init_graph_ram(data, x_start*infoFont[data->typeOfFont].width, y_start*infoFont[data->typeOfFont].height, width*infoFont[data->typeOfFont].width, height*infoFont[data->typeOfFont].height);
-	LCDgotoFontGraph(data, x_start, y_start);
-}
-
 
 
 

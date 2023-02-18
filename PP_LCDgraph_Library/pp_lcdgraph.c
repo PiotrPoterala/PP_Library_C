@@ -19,6 +19,7 @@ void PLCDgraphConstruct(PLCDgraph *lcd, uPin *outputsPins, uPortMask *outputsPor
 			lcd_init(&lcd->data);
 			LCDreset(&lcd->data, 1);
 	
+			lcd->setFont=LCDsetFont;
 			lcd->setTextAtribiuteModeEnable=LCDsetTextAtribiuteModeEnable;
 			lcd->setReverse=LCDsetReverse;
 			lcd->setBlink=LCDsetBlink;
@@ -33,14 +34,12 @@ void PLCDgraphConstruct(PLCDgraph *lcd, uPin *outputsPins, uPortMask *outputsPor
 	
 			lcd->seek=LCDgoto;
 			lcd->seekPage=LCDgotoPage;
-			lcd->clear=LCDclearFont;
+			lcd->clear=LCDclear;
 			lcd->clearPages=LCDclearPages;
 			
 			lcd->write=LCDwrite;
-			lcd->writeChar=LCDwriteChar;
+			lcd->writeChar=LCDputchar;
 			lcd->writeFromString=LCDwriteFromString;
-	//		lcd->writeWrap=LCDwriteWrap;
-	
 	
 			lcd->drawIcon=send_icon_ram;	
 			
@@ -48,6 +47,7 @@ void PLCDgraphConstruct(PLCDgraph *lcd, uPin *outputsPins, uPortMask *outputsPor
 
 void LCDreset(LCDdata *data, unsigned int noOfPageToClear){
 	
+		LCDsetFont(data, BASE_FONT);
 		LCDclearPages(data, 0, noOfPageToClear);
 		LCDgotoPage(data, 0);
 		LCDsetTextAtribiuteModeEnable(data, false);
@@ -56,40 +56,12 @@ void LCDreset(LCDdata *data, unsigned int noOfPageToClear){
 	
 }
 
-void LCDclearFont(LCDdata *data, unsigned int x_start, unsigned int y_start, unsigned int width, unsigned int height){
-	
-	if(data->typeOfFont==BASE_FONT){
-		LCDclear(data, x_start, y_start, width, height);
-	}else{
-		LCDclearFontGraph(data, x_start, y_start, width, height);
-	}
-	
-}
-
-
-void LCDwriteChar(LCDdata* data, char s) {
-
-	if(data->typeOfFont==BASE_FONT){
-		LCDputchar(data, s);
-	}else{
-		LCDputcharGraph(data, s);
-	}
-
-}
-
-
 
 void LCDwrite(LCDdata* data, const char *s) {
 
-	if(data->typeOfFont==BASE_FONT){
 		while(*s){ 
 			LCDputchar(data, *(s++));
 		}
-	}else{
-		while(*s){ 
-			LCDputcharGraph(data, *(s++));
-		}
-	}
 
 }
 
@@ -99,28 +71,10 @@ void LCDwriteFromString(LCDdata* data, const char *s, unsigned int num) {
 	
 	while(*s){ 
 		if(numOfWriteChars>=num)break;
-		if(data->typeOfFont==BASE_FONT){
-			LCDputchar(data, *(s++));
-		}else{
-			LCDputcharGraph(data, *(s++));
-		}
+		LCDputchar(data, *(s++));
 		numOfWriteChars++;
 	}
 
 }
 
-//unsigned int LCDwriteWrap(LCDdata* data, const char *s) {
-//		unsigned int noOfWrap=0;
-
-//	if(data->typeOfFont==BASE_FONT){
-//		while(*s){ 
-//			if(LCDputcharWrap(data, *(s++)))noOfWrap++;
-//		}
-//	}else{
-//		while(*s){ 
-//			if(LCDputcharGraphWrap(data, *(s++)))noOfWrap++;
-//		}
-//	}
-//	return noOfWrap;
-//}
 

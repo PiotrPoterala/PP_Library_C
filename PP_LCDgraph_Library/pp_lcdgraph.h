@@ -14,6 +14,7 @@
 			void (*intro)(LCDdata* data);
 			void (*reset)(LCDdata *data, unsigned int noOfPageToClear);
 			
+			void (*setFont)(LCDdata* data, FontType typeOfFont);
 			void (*setTextAtribiuteModeEnable)(LCDdata* data, _Bool enable);
 			void (*setReverse)(LCDdata* data, _Bool reverse);
 			void (*setBlink)(LCDdata* data, _Bool blink);
@@ -33,7 +34,7 @@
 			
 
 			void (*write)(LCDdata* data, const char *s);
-			void (*writeChar)(LCDdata* data, char s);
+			void (*writeChar)(LCDdata* data, unsigned char s);
 			void (*writeFromString)(LCDdata* data, const char *s, unsigned int num);
 	//		unsigned int (*writeWrap)(LCDdata* data, const char *s);
 			
