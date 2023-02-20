@@ -1,5 +1,6 @@
 #include "t6963.h"
 #include "config.h"
+#include <string.h>
 
 extern const unsigned char markPP_space[];
 extern const unsigned char markPP_dot[];
@@ -29,18 +30,16 @@ extern const unsigned char markPP_underline[];
 const SFont infoFont[2]={{8,1},{0x18, 0x02}};
 
 
-void LCDsetIO(LCDdata *data, uPin *outputsPins, uPortMask *outputsPortMask, int outputsPortMaskSize){
+void LCDsetIO(LCDdata *data, uPin *ioPins, PPortsData *ioPorts){
 	
-			data->outputsPins=outputsPins;
-			data->outputsPortMask=outputsPortMask;
-			data->outputsPortMaskSize=outputsPortMaskSize;
+			data->ioPins=ioPins;
+			data->ioPorts=ioPorts;
 	
-			for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
-				for(int j=0; j<data->outputsPortMaskSize; j++){
-					if(data->outputsPortMask[j].port==data->outputsPins[i].port)data->outputsPortMask[j].clrMask|= (1<<data->outputsPins[i].pin);
-				}
+
+			for(int i=0; i<LCD_PINS_SIZE; i++){
+				OUT_SET_REG(data->ioPins[i].port, data->ioPins[i].pin, IO_OUT_HS);	
 			}
-	
+
 }
 
 void LCDsetFont(LCDdata* data, FontType typeOfFont){
@@ -571,44 +570,44 @@ void lcd_write_2cmd(LCDdata *lcdData, unsigned char arg1, unsigned char arg2, un
 
 void lcd_hwd_init(LCDdata *lcdData){
 
-	PIN_CLR(lcdData->outputsPins[RES].port, (1<<lcdData->outputsPins[RES].pin));	
+	PIN_CLR(lcdData->ioPins[RES].port, (1<<lcdData->ioPins[RES].pin));	
 	delay_ms(50);
-	PIN_SET(lcdData->outputsPins[RES].port, (1<<lcdData->outputsPins[RES].pin));	
-	PIN_SET(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
-	PIN_SET(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));
-	PIN_SET(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin));
-	PIN_SET(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));
+	PIN_SET(lcdData->ioPins[RES].port, (1<<lcdData->ioPins[RES].pin));	
+	PIN_SET(lcdData->ioPins[CD].port, (1<<lcdData->ioPins[CD].pin));
+	PIN_SET(lcdData->ioPins[RD].port, (1<<lcdData->ioPins[RD].pin));
+	PIN_SET(lcdData->ioPins[WR].port, (1<<lcdData->ioPins[WR].pin));
+	PIN_SET(lcdData->ioPins[CE].port, (1<<lcdData->ioPins[CE].pin));
 	delay(2);
 	
 }
 
 
 void lcd_write_data(LCDdata *lcdData, unsigned char data){
- 	PIN_CLR(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
-	PIN_SET(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));	
+ 	PIN_CLR(lcdData->ioPins[CD].port, (1<<lcdData->ioPins[CD].pin));
+	PIN_SET(lcdData->ioPins[RD].port, (1<<lcdData->ioPins[RD].pin));	
 	delay(2);
 	wr_lcd_bus(lcdData, data);
 }
 
 void lcd_write_cmd(LCDdata *lcdData, unsigned char cmd){
-		PIN_SET(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
-		PIN_SET(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));	
+		PIN_SET(lcdData->ioPins[CD].port, (1<<lcdData->ioPins[CD].pin));
+		PIN_SET(lcdData->ioPins[RD].port, (1<<lcdData->ioPins[RD].pin));	
 		delay(2);   
 		wr_lcd_bus(lcdData, cmd);
 }
 
 unsigned char lcd_read_data(LCDdata *lcdData){
-		PIN_CLR(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
-		PIN_SET(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin));	
+		PIN_CLR(lcdData->ioPins[CD].port, (1<<lcdData->ioPins[CD].pin));
+		PIN_SET(lcdData->ioPins[WR].port, (1<<lcdData->ioPins[WR].pin));	
 		delay(2); 
 		return(rd_lcd_bus(lcdData));
 }
 
 
 unsigned char lcd_read_status(LCDdata *lcdData){
-		PIN_SET(lcdData->outputsPins[CD].port, (1<<lcdData->outputsPins[CD].pin));
-		PIN_SET(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin)); 
-		delay(2); 
+		PIN_SET(lcdData->ioPins[CD].port, (1<<lcdData->ioPins[CD].pin));
+		PIN_SET(lcdData->ioPins[WR].port, (1<<lcdData->ioPins[WR].pin)); 
+		delay(5); 
 		return(rd_lcd_bus(lcdData));
 }
 
@@ -616,16 +615,16 @@ unsigned char lcd_read_status(LCDdata *lcdData){
 unsigned char rd_lcd_bus(LCDdata *lcdData){
 		unsigned char data;
 		DataLinesIn(lcdData); 
-	 	PIN_CLR(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));
-		PIN_CLR(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));	
+	 	PIN_CLR(lcdData->ioPins[CE].port, (1<<lcdData->ioPins[CE].pin));
+		PIN_CLR(lcdData->ioPins[RD].port, (1<<lcdData->ioPins[RD].pin));	
 		delay(2); 
 
 		for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
-				data|=((lcdData->outputsPins[i].port->IDR>>lcdData->outputsPins[i].pin) & 0x1)<<i;
+				data|=((lcdData->ioPins[i].port->IDR>>lcdData->ioPins[i].pin) & 0x1)<<i;
 		}
 	
-		PIN_SET(lcdData->outputsPins[RD].port, (1<<lcdData->outputsPins[RD].pin));
-		PIN_SET(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));	
+		PIN_SET(lcdData->ioPins[RD].port, (1<<lcdData->ioPins[RD].pin));
+		PIN_SET(lcdData->ioPins[CE].port, (1<<lcdData->ioPins[CE].pin));	
 		return(data);
 }
 
@@ -634,31 +633,31 @@ void wr_lcd_bus(LCDdata *lcdData, unsigned char data){
 		DataLinesOut(lcdData); 
 
 		for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
-			for(int j=0; j<lcdData->outputsPortMaskSize; j++){
-				if(lcdData->outputsPortMask[j].port==lcdData->outputsPins[i].port)lcdData->outputsPortMask[j].mask|= (((data>>i) & 0x1)<<lcdData->outputsPins[i].pin);
+			for(int j=0; j<lcdData->ioPorts->size; j++){
+				if(lcdData->ioPorts->portsMasks[j].port==lcdData->ioPins[i].port)lcdData->ioPorts->portsMasks[j].mask|= (((data>>i) & 0x1)<<lcdData->ioPins[i].pin);
 			}
 		}
 		
-		for(int i=0; i<lcdData->outputsPortMaskSize; i++){	
-			lcdData->outputsPortMask[i].port->ODR=(lcdData->outputsPortMask[i].port->ODR & ~(lcdData->outputsPortMask[i].clrMask)) | lcdData->outputsPortMask[i].mask;
-			lcdData->outputsPortMask[i].mask=0;
+		for(int i=0; i<lcdData->ioPorts->size; i++){	
+			lcdData->ioPorts->portsMasks[i].port->ODR=(lcdData->ioPorts->portsMasks[i].port->ODR & ~(lcdData->ioPorts->portsMasks[i].clrMask)) | lcdData->ioPorts->portsMasks[i].mask;
+			lcdData->ioPorts->portsMasks[i].mask=0;
 		}
 	
 	
 		delay(5);
-		PIN_CLR(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));
-		PIN_CLR(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin));	
-		delay(2);
-		PIN_SET(lcdData->outputsPins[WR].port, (1<<lcdData->outputsPins[WR].pin));	
-		PIN_SET(lcdData->outputsPins[CE].port, (1<<lcdData->outputsPins[CE].pin));
+		PIN_CLR(lcdData->ioPins[CE].port, (1<<lcdData->ioPins[CE].pin));
+		PIN_CLR(lcdData->ioPins[WR].port, (1<<lcdData->ioPins[WR].pin));	
+		delay(5);
+		PIN_SET(lcdData->ioPins[WR].port, (1<<lcdData->ioPins[WR].pin));	
+		PIN_SET(lcdData->ioPins[CE].port, (1<<lcdData->ioPins[CE].pin));
 }
 
 
 static void DataLinesIn(LCDdata *lcdData) {
 	
 	for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
-		PIN_CLR(lcdData->outputsPins[i].port, (1<<lcdData->outputsPins[i].pin));
-		IN_SET_REG(lcdData->outputsPins[i].port, lcdData->outputsPins[i].pin, IO_IN_PU);	
+		PIN_CLR(lcdData->ioPins[i].port, (1<<lcdData->ioPins[i].pin));
+		IN_SET_REG(lcdData->ioPins[i].port, lcdData->ioPins[i].pin, IO_IN_PU);	
 	}
 	
 }
@@ -666,7 +665,7 @@ static void DataLinesIn(LCDdata *lcdData) {
 static void DataLinesOut(LCDdata *lcdData) {
 
 	for(int i=0; i<LCD_DATA_PINS_SIZE; i++){
-		OUT_SET_REG(lcdData->outputsPins[i].port, lcdData->outputsPins[i].pin, IO_OUT_HS);	
+		OUT_SET_REG(lcdData->ioPins[i].port, lcdData->ioPins[i].pin, IO_OUT_HS);	
 	}
 	
 }

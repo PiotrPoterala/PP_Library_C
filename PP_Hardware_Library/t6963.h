@@ -3,7 +3,7 @@
 
 	#include <stdbool.h>
 	#include "delay.h"
-	#include "def_pins_stm32f4.h"
+	#include "pp_const_ports_masks_list.h"
 
 		#define LCD_PINS_SIZE 13 
 		#define LCD_DATA_PINS_SIZE 8 
@@ -12,11 +12,11 @@
 
 		typedef enum {BASE_FONT, FONT_1}FontType;
 
+				
 		typedef struct{
 			
-			uPin *outputsPins;
-			uPortMask *outputsPortMask;
-			int outputsPortMaskSize;
+			uPin *ioPins;
+			PPortsData *ioPorts;
 			
 			
 			volatile unsigned int posX;
@@ -42,7 +42,7 @@
 		}SFont;
 
 		
-	void LCDsetIO(LCDdata *data, uPin *outputsPins, uPortMask *outputsPortMask, int outputsPortMaskSize);
+	void LCDsetIO(LCDdata *data, uPin *ioPins, PPortsData *ioPorts);
 		
 	//for font 8x8 and number of dots 240x128
 	#define LCD_ROWS 16 

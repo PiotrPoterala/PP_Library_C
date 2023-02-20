@@ -41,7 +41,7 @@
 			void (*drawIcon)(LCDdata *data, const unsigned char *buffer);
 		}PLCDgraph;
 
-		void PLCDgraphConstruct(PLCDgraph *lcd, uPin *outputsPins, uPortMask *outputsPortMask, int outputsPortMaskSize);
+		void PLCDgraphConstruct(PLCDgraph *lcd, uPin *ioPins, PPortsData *ioPorts);
 		
 		void LCDreset(LCDdata *data, unsigned int noOfPageToClear);
 

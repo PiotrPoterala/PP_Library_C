@@ -1,3 +1,14 @@
+Listings/
+DebugConfig/
+Objects/
+
+*.scvd
+*.iex
+*.axf
+*.htm
+*.lnp
+*.crf
+
 # Prerequisites
 *.d
 

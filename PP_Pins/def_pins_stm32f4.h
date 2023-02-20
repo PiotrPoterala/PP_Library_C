@@ -171,13 +171,13 @@
 
 typedef struct{
 	GPIO_TypeDef* port;
-	int pin;
+	unsigned int pin;
 }uPin;
 
 typedef struct{
 	GPIO_TypeDef* port;
-	int clrMask;
-	int mask;
+	unsigned int clrMask;
+	unsigned int mask;
 }uPortMask;
 
 #endif

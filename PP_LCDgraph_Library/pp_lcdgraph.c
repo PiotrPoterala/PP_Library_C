@@ -1,21 +1,9 @@
 #include "pp_lcdgraph.h"
 
 
-void PLCDgraphConstruct(PLCDgraph *lcd, uPin *outputsPins, uPortMask *outputsPortMask, int outputsPortMaskSize){
+void PLCDgraphConstruct(PLCDgraph *lcd, uPin *ioPins, PPortsData *ioPorts){
 	
-//			lcd->data.posX=0;
-//			lcd->data.posY=0;
-//			lcd->data.posGraphX=0;
-//			lcd->data.posGraphX=0;
-//	
-//			lcd->data.typeOfFont=BASE_FONT;
-//			lcd->data.bold=false;
-//			lcd->data.blink=false;
-//			lcd->data.reverse=false;
-//			lcd->data.textAtribiuteModeEnable=false;
-//			lcd->data.cursorEnable=false;
-	
-			LCDsetIO(&lcd->data, outputsPins, outputsPortMask, outputsPortMaskSize);
+			LCDsetIO(&lcd->data, ioPins, ioPorts);
 			lcd_init(&lcd->data);
 			LCDreset(&lcd->data, 1);
 	
