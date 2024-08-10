@@ -1,0 +1,32 @@
+#ifndef _COLORS_H
+	#define _COLORS_H
+
+
+#define	COLOR_STRONG_TRANSPARENT	(100)
+#define	COLOR_TRANSPARENT					(200)
+#define	COLOR_NOT_TRANSPARENT			(255)
+
+#define	COLOR_BG_DARK			(0x333333)
+#define	COLOR_BG_LIGHT		(0x555555)
+#define	COLOR_POPUP_MENU	(0x888888)
+#define	COLOR_TEXT				(0xFFFFCC)
+
+#define	COLOR_DISABLED		(0x777777)
+
+#define	GRAY_VERY_LIGHT		(0x888888)
+#define	GRAY_LIGHT				(0x666666)
+#define	GRAY_DARK					(0x444444)
+#define	GRAY_VERY_DARK		(0x222222)
+#define	BLACK							(0x000000)
+#define	WHITE							(0xFFFFFF)
+
+#define	ORANGE_LOGO			(0xE25300)
+#define	ORANGE_LIGHT		(0xFF9900)
+#define	ORANGE_DARK			(0xFF6600)
+
+#define	GREEN_LIGHT			(0x00FF00)
+#define	GREEN_DARK			(0x01BC01)
+
+#define	RED_DARK			(0xFF0000)
+
+#endif
