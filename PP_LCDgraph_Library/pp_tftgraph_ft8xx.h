@@ -50,7 +50,6 @@ typedef enum {
 		
 typedef struct{
 		PExtRam *extram;
-//		unsigned int focusCMDadress;
 		bool init;
 }PTFTgraphFT8XXData;
 
@@ -79,20 +78,26 @@ typedef struct
 			void (*drawRectangular)(PTFTgraphFT8XXData *data, PXY startPoint, PXY endPoint, unsigned int color, unsigned int lineWidth);
 			void (*drawBitmap)(PTFTgraphFT8XXData *data, PXY position, sBitmapHeader *bitmapDesc, unsigned int color);
 			void (*drawLine)(PTFTgraphFT8XXData *data, PXY startPoint, PXY endPoint, unsigned int color, unsigned int lineWidth);
+			void (*drawLineStrip)(PTFTgraphFT8XXData *data, PXY *pointTab, unsigned int pointTabSize, unsigned int color, unsigned int stripType, unsigned int lineWidth);
 			void (*drawPoint)(PTFTgraphFT8XXData *data, PXY position, unsigned int color, unsigned int size);
 			void (*writeString)(PTFTgraphFT8XXData *data, PXY startPoint, unsigned int font, unsigned int options, const char* str, unsigned int color);
 			void (*writeFromString)(PTFTgraphFT8XXData *data, PXY startPoint, unsigned int font, unsigned int options, const char* str, unsigned int num, unsigned int color);
 			void (*writeChar)(PTFTgraphFT8XXData *data, PXY startPoint, unsigned int font, unsigned int options, char c, unsigned int color);
 			void (*writeNumber)(PTFTgraphFT8XXData *data, PXY position, unsigned int font, unsigned int options, int n, unsigned int color);
 			void (*drawClock)(PTFTgraphFT8XXData *data, PXY position, unsigned int r, unsigned int options, unsigned int h, unsigned int m, unsigned int s, unsigned int ms, unsigned int color, unsigned int bgColor);
+			void (*drawGauge)(PTFTgraphFT8XXData *data, PXY position, unsigned int r, unsigned int options, unsigned int major, unsigned int minor, unsigned int val, unsigned int range, unsigned int color, unsigned int bgColor);
 			void (*drawButton)(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int font, unsigned int options, const char* str, unsigned int tag, unsigned int color, unsigned int fgColor, unsigned int gradColor);
 			void (*drawProgress)(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int options, unsigned int val, unsigned int range, unsigned int color, unsigned int bgColor);
 			void (*drawScrollbar)(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int options, unsigned int val, unsigned int size, unsigned int range, unsigned int tag, unsigned int fgColor, unsigned int bgColor);
+			void (*drawSlider)(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int options, unsigned int val, unsigned int range, unsigned int tag, unsigned int color, unsigned int fgColor, unsigned int bgColor);
+			void (*drawDial)(PTFTgraphFT8XXData *data, PXY position, unsigned int r, unsigned int options, unsigned int val, unsigned int tag, unsigned int color, unsigned int fgColor);
 			void (*drawIconButton)(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int options, sBitmapHeader *bitmapHeader, unsigned int tag, unsigned int color, unsigned int fgColor, unsigned int gradColor);
 			void (*drawKeys)(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int font, unsigned int options, const char* strr, unsigned int color, unsigned int fgColor, unsigned int gradColor);
 			void (*drawCircleIconButton)(PTFTgraphFT8XXData *data, PXY position, unsigned int size, sBitmapHeader *bitmapHeader, unsigned int tag, unsigned int color, unsigned int bitmapColor);
 			void (*drawToggle)(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int font, unsigned int options, unsigned int state, const char* str, unsigned int tag, unsigned int color, unsigned int fgColor, unsigned int bgColor);
-			void (*drawSpinner)(PTFTgraphFT8XXData *data, PXY position, unsigned int style, unsigned int scale, unsigned int color);
+			void (*animateSpinner)(PTFTgraphFT8XXData *data, PXY position, unsigned int style, unsigned int scale, unsigned int color);
+
+			void (*stopAnimateSpinner)(PTFTgraphFT8XXData *data);
 			void (*drawLineEdit)(PTFTgraphFT8XXData *data, PXY position, unsigned int font, unsigned int options, const char* str, unsigned int maxSignsToDisplay, unsigned int cursor, bool cursorVisible, unsigned int tag);
 			void (*drawTextEdit)(PTFTgraphFT8XXData *data, PXY position, unsigned int font, const char (*str)[64], unsigned int strRows, unsigned int maxRows, unsigned int maxSignsInLine, PXY cursor, bool cursorVisible, unsigned int tag);
 
@@ -125,6 +130,7 @@ typedef struct
 		unsigned int setFont(PTFTgraphFT8XXData *data, unsigned int font);
 		void drawRectangular(PTFTgraphFT8XXData *data, PXY startPoint, PXY endPoint, unsigned int color, unsigned int lineWidth);
 		void drawLine(PTFTgraphFT8XXData *data, PXY startPoint, PXY endPoint, unsigned int color, unsigned int lineWidth);
+		void drawLineStrip(PTFTgraphFT8XXData *data, PXY *pointTab, unsigned int pointTabSize, unsigned int color, unsigned int stripType, unsigned int lineWidth);
 		void drawPoint(PTFTgraphFT8XXData *data, PXY position, unsigned int color, unsigned int size);
 		void drawBitmap(PTFTgraphFT8XXData *data, PXY position, sBitmapHeader *bitmapDesc, unsigned int color);
 		void writeString(PTFTgraphFT8XXData *data, PXY startPoint, unsigned int font, unsigned int options, const char* str, unsigned int color);
@@ -132,14 +138,18 @@ typedef struct
 		void writeChar(PTFTgraphFT8XXData *data, PXY startPoint, unsigned int font, unsigned int options, char c, unsigned int color);
 		void writeNumber(PTFTgraphFT8XXData *data, PXY position, unsigned int font, unsigned int options, int n, unsigned int color);
 		void drawClock(PTFTgraphFT8XXData *data, PXY position, unsigned int r, unsigned int options, unsigned int h, unsigned int m, unsigned int s, unsigned int ms, unsigned int color, unsigned int bgColor);
+		void drawGauge(PTFTgraphFT8XXData *data, PXY position, unsigned int r, unsigned int options, unsigned int major, unsigned int minor, unsigned int val, unsigned int range, unsigned int color, unsigned int bgColor);
 		void drawButton(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int font, unsigned int options, const char* str, unsigned int tag, unsigned int color, unsigned int fgColor, unsigned int gradColor);
 		void drawProgress(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int options, unsigned int val, unsigned int range, unsigned int color, unsigned int bgColor);
 		void drawScrollbar(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int options, unsigned int val, unsigned int size, unsigned int range, unsigned int tag, unsigned int fgColor, unsigned int bgColor);
+		void drawSlider(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int options, unsigned int val, unsigned int range, unsigned int tag, unsigned int color, unsigned int fgColor, unsigned int bgColor);
+		void drawDial(PTFTgraphFT8XXData *data, PXY position, unsigned int r, unsigned int options, unsigned int val, unsigned int tag, unsigned int color, unsigned int fgColor);
 		void drawIconButton(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int options, sBitmapHeader *bitmapHeader, unsigned int tag, unsigned int color, unsigned int fgColor, unsigned int gradColor);
 		void drawCircleIconButton(PTFTgraphFT8XXData *data, PXY position, unsigned int size, sBitmapHeader *bitmapHeader, unsigned int tag, unsigned int color, unsigned int bitmapColor);
 		void drawKeys(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int h, unsigned int font, unsigned int options, const char* strr, unsigned int color, unsigned int fgColor, unsigned int gradColor);
 		void drawToggle(PTFTgraphFT8XXData *data, PXY position, unsigned int w, unsigned int font, unsigned int options, unsigned int state, const char* str, unsigned int tag, unsigned int color, unsigned int fgColor, unsigned int bgColor);
-		void drawSpinner(PTFTgraphFT8XXData *data, PXY position, unsigned int style, unsigned int scale, unsigned int color);
+		void animateSpinner(PTFTgraphFT8XXData *data, PXY position, unsigned int style, unsigned int scale, unsigned int color);
+		void stopAnimateSpinner(PTFTgraphFT8XXData *data);
 		void drawLineEdit(PTFTgraphFT8XXData *data, PXY position, unsigned int font, unsigned int options, const char* str, unsigned int maxSignsToDisplay, unsigned int cursor, bool cursorVisible, unsigned int tag);
 		void drawTextEdit(PTFTgraphFT8XXData *data, PXY position, unsigned int font, const char (*str)[64], unsigned int strRows, unsigned int maxRows, unsigned int maxSignsInLine, PXY cursor, bool cursorVisible, unsigned int tag);
 

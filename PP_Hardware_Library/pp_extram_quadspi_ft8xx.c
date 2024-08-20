@@ -116,7 +116,6 @@ void sendWord8FromSendQueueExtRAMft8XX(PExtRamData* data){
 		*(__IO uint8_t *) octospi1base=(uint8_t)sign;
 	}else{
 		OCTOSPI1->CR &=~OCTOSPI_CR_FTIE;	
-//		OCTOSPI1->CR |= OCTOSPI_CR_ABORT;
 		data->rdWrInProgress=false;
 	}
  }
@@ -149,7 +148,6 @@ void receiveAndWriteToReceiveQueueExtRAMft8XX(PExtRamData* data){
 	
 	if(data->nbrOfDataToRead<=0){
 		OCTOSPI1->CR &=~OCTOSPI_CR_FTIE;	
-	//	OCTOSPI1->CR |= OCTOSPI_CR_ABORT;
 		data->rdWrInProgress=false;
 	}
 	
@@ -180,21 +178,20 @@ void readTabExtRAMft8XX(PExtRamData *data, int *dataToReceive, int dataSize){
 		
 		
 		OCTOSPI1->DLR = sizeof(int)*dataSize-1;
-		OCTOSPI1->CR = (OCTOSPI1->CR & ~OCTOSPI_CR_FMODE) | OCTOSPI_CR_FMODE_0;			//włączenie funkcji odczytu pośredniego (indirect mode)	
-//		OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_0;		//adres wysyłany na jednej linii
+		OCTOSPI1->CR = (OCTOSPI1->CR & ~OCTOSPI_CR_FMODE) | OCTOSPI_CR_FMODE_0;			//Functional mode: Indirect-read mode
 		
 		if(data->spiDataMode==QUAD_LINE){
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_1 | OCTOSPI_CCR_ADMODE_0;		//adres wysyłany na czterech liniach
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADSIZE) | OCTOSPI_CCR_ADSIZE_1;  	//24-bitowy adres
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_1 | OCTOSPI_CCR_ADMODE_0;		//Address mode: Address on four lines
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADSIZE) | OCTOSPI_CCR_ADSIZE_1;  	//Address size: 24-bit address
 			OCTOSPI1->TCR = (OCTOSPI1->TCR & ~OCTOSPI_TCR_DCYC) | (2<<OCTOSPI_TCR_DCYC_Pos);	
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_1 | OCTOSPI_CCR_DMODE_0;		
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_1 | OCTOSPI_CCR_DMODE_0;		//Data mode: Data on four lines
 			OCTOSPI1->AR = (data->focusAdress & 0x3FFFFF);			
 		}else{
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_0;		//adres wysyłany na jednej linii
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADSIZE) | OCTOSPI_CCR_ADSIZE_1 | OCTOSPI_CCR_ADSIZE_0;	//adres 32 bitowy
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_0;		//Address mode: Address on a single line
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADSIZE) | OCTOSPI_CCR_ADSIZE_1 | OCTOSPI_CCR_ADSIZE_0;	//Address size: 32-bit address
 			OCTOSPI1->TCR = (OCTOSPI1->TCR & ~OCTOSPI_TCR_DCYC);
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_0;			//dane na jednej linii
-			OCTOSPI1->AR = (data->focusAdress & 0x3FFFFF)<<8;//okazało się że pomiędzy adresem a dummy byte pojawia się logiczna 1 na czas jednego cyklu zegara; żeby tego uniknąć ten jeden dummy byte wpisuję w adres
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_0;			//Data mode: Data on a signle line
+			OCTOSPI1->AR = (data->focusAdress & 0x3FFFFF)<<8;//between the address and the dummy byte a logical 1 appears for one clock cycle; to avoid this I enter this one dummy byte into the address
 		}
 		
 
@@ -247,14 +244,13 @@ void writeHostCommExtRAMft8XX(PExtRamData *data, unsigned int command, unsigned 
 
 		OCTOSPI1->DLR = 2;
 	
-		OCTOSPI1->CR = (OCTOSPI1->CR & ~OCTOSPI_CR_FMODE);			//włączenie funkcji zapisu pośredniego (indirect mode)
+		OCTOSPI1->CR = (OCTOSPI1->CR & ~OCTOSPI_CR_FMODE);			//Functional mode: Indirect-write mode
 			
-		OCTOSPI1->TCR = (OCTOSPI1->TCR & ~OCTOSPI_TCR_DCYC);
+		OCTOSPI1->TCR = (OCTOSPI1->TCR & ~OCTOSPI_TCR_DCYC);		//Number of dummy cycles: no cycles
 		
-		OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE);		//brak adresu
-		OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_0;			//dane na jednej linii
+		OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE);		//Address mode: No address
+		OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_0;			//Data mode: Data on a signle line
 		
-//		OCTOSPI1->IR = command;
 		
 		OCTOSPI1->CR |=OCTOSPI_CR_FTIE;		//treshold interupt enable
 		OCTOSPI1->CR |=OCTOSPI_CR_TCIE;		//transfer complete interupt enable
@@ -290,19 +286,19 @@ bool writeTabExtRAMft8XX(PExtRamData *data, int *dataToSend, int dataSize){
 		}
 		
 
-		OCTOSPI1->CR = (OCTOSPI1->CR & ~OCTOSPI_CR_FMODE);			//włączenie funkcji zapisu pośredniego (indirect mode)
-		OCTOSPI1->TCR = (OCTOSPI1->TCR & ~OCTOSPI_TCR_DCYC);			//brak pustych cykli
-		OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADSIZE) | OCTOSPI_CCR_ADSIZE_1;  	//24-bitowy adres
+		OCTOSPI1->CR = (OCTOSPI1->CR & ~OCTOSPI_CR_FMODE);			//Functional mode: Indirect-write mode
+		OCTOSPI1->TCR = (OCTOSPI1->TCR & ~OCTOSPI_TCR_DCYC);		//Number of dummy cycles: no cycles
+		OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADSIZE) | OCTOSPI_CCR_ADSIZE_1;  	//Address size: 24-bit address
 		
 		if(data->spiDataMode==QUAD_LINE){
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_1 | OCTOSPI_CCR_ADMODE_0;		//adres wysyłany na czterech liniach
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_1 | OCTOSPI_CCR_DMODE_0;			 
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_1 | OCTOSPI_CCR_ADMODE_0;		//Address mode: Address on four lines
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_1 | OCTOSPI_CCR_DMODE_0;			 //Data mode: Data on four lines
 		}else{
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_0;		//adres wysyłany na jednej linii
-			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_0;			//dane na jednej linii
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_ADMODE) | OCTOSPI_CCR_ADMODE_0;		//Address mode: Address on a single line
+			OCTOSPI1->CCR = (OCTOSPI1->CCR & ~OCTOSPI_CCR_DMODE) | OCTOSPI_CCR_DMODE_0;			//Data mode: Data on a signle line
 		}
 		
-		OCTOSPI1->AR = (data->focusAdress & 0x3FFFFF) | (2<<22);		//w przypadku gdy komenda potrzebuje adresu (ADMODE!=00) i potrzebuje danych (DMODE!=00) rozpoczęcie wysyłąnia zaczyna się po wpisaniu danej do rejestru DR
+		OCTOSPI1->AR = (data->focusAdress & 0x3FFFFF) | (2<<22);		//in case the command needs an address (ADMODE!=00) and data (DMODE!=00), sending starts after writing the data to the DR register
 		OCTOSPI1->CR |=OCTOSPI_CR_FTIE;		//treshold interupt enable
 		OCTOSPI1->CR |=OCTOSPI_CR_TCIE;		//transfer complete interupt enable
 		OCTOSPI1->CR |=OCTOSPI_CR_TEIE;	//transfer error interupt enable
